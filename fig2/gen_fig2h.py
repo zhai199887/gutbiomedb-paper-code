@@ -57,7 +57,7 @@ warnings.filterwarnings("ignore")
 OUTPUT_DIR = r"E:\tasks\screenshots\fig2h"
 FONT       = "Arial"
 TOP_N      = 30
-PERMANOVA_N_PERMS    = 999      # 999 permutations (top-journal standard)
+PERMANOVA_N_PERMS    = 999      # 999 permutations
 PERMANOVA_MAX_SAMPLE = 500      # max 500 samples per age group (avoid memory overflow)
 SPEARMAN_ALPHA       = 0.05     # FDR threshold
 
