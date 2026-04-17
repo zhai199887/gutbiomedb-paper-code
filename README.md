@@ -1,147 +1,96 @@
-# GutBiomeDB — Manuscript Figure Code
+# GutBiomeDB paper code
 
-Custom Python scripts used to produce **all main and Extended Data figures** of the GutBiomeDB paper (Nature Methods, under review).
+Python scripts that produce the figures and source-data tables in the
+GutBiomeDB manuscript.
 
-> Zhai J, Dai C, *et al.* **GutBiomeDB: an integrative platform for 168,464 human gut metagenomes across 48 diseases and 4,680 microbial genera.** *Nature Methods* (under review, 2026).
+The live website and the backend/frontend source are in a separate repo:
+https://github.com/zhai199887/GutBiomeDB (deployed at https://gutbiomedb.online).
 
-This repository contains **only** the figure-generation code. The GutBiomeDB **platform source code** (FastAPI backend, React frontend, disease-ontology database) lives in a separate repository:
+## Setup
 
-- **Platform repo:** https://github.com/zhai199887/GutBiomeDB
-- **Live platform:** https://gutbiomedb.online
+    pip install -r requirements.txt
 
----
+Python 3.10+. Fig 1c thumbnails additionally need a Chromium install:
 
-## Data dependency (important)
+    playwright install chromium
 
-Many scripts here import from the platform backend — for example:
+Most scripts import directly from the platform backend, e.g.
 
-```python
-from main import _inform_label_mask, get_abundance_matrix
-from api.main import DISEASE_ONTOLOGY
-```
+    from main import _inform_label_mask
+    from api.main import get_abundance, get_metadata
 
-To reproduce figures you need **either**:
+Clone https://github.com/zhai199887/GutBiomeDB next to this repo and put
+its `api/` folder on `PYTHONPATH`, or query the REST endpoints at
+https://gutbiomedb.online/api. Per-sample counts, curated metadata and
+GBHI scores are all served through the platform.
 
-1. Clone the platform repo alongside this one so both live under a shared parent directory and add it to `PYTHONPATH`, **or**
-2. Query the deployed REST API at https://gutbiomedb.online/api (slower, but no local setup).
+## Layout
 
-Raw read counts, curated metadata, per-sample GBHI scores, and all Source-Data spreadsheets are available through the platform. The 168,464 × 4,680 analytical matrix and `_disk_cache/` are the **single source of truth** for every number cited in the paper.
+    fig1/               Figure 1 panels
+    fig2/               Figure 2 panels (Crohn's disease case study)
+    fig3/               Figure 3 panels (universal GBHI LOCO validation)
+    fig3_pipeline/      upstream compute: the OOF probability matrix and
+                        cohort-LOCO marker-audit tables consumed by
+                        Fig 3 and Extended Data Fig 1-3
+    ExtendedDataFig1/   external-cohort GBHI validation
+    ExtendedDataFig2/   per-disease x per-cohort LOCO grid
+    ExtendedDataFig3/   OOF score distributions across the nine training diseases
 
----
+`fig2/gen_fig2g.py` and `fig2/gen_fig2h.py` are exploratory panels that
+did not make it into the published figure; they are kept for transparency.
 
-## Environment
+## Run order
 
-- Python ≥ 3.10
-- Install dependencies:
+    fig3_pipeline/_build_v6_cache.py
+    fig3_pipeline/fit_gbhi_universal.py
+    fig3_pipeline/run_cohort_loco_oof.py
+    fig3_pipeline/run_cohort_loco_marker_audit.py
+    fig3_pipeline/gen_loco_per_cohort_json.py
 
-```bash
-pip install -r requirements.txt
-```
+    fig1/prep_fig1d_mantel_corr.py
+    fig1/prep_fig1e_partial_spearman.py
+    fig1/capture_thumbs_light.py
+    fig1/gen_fig1b_worldmaps.py
+    fig1/gen_fig1c_platform_overview.py
+    fig1/stitch_fig1.py
 
-`playwright` is only needed for Fig 1c thumbnails — run `playwright install chromium` once after `pip install`.
+    fig2/gen_fig2a.py .. fig2/gen_fig2f.py
+    fig2/gen_fig2.py                    # composite
 
----
+    fig3/gen_fig3a.py .. fig3/gen_fig3f.py
+    fig3/gen_fig3_composite.py
 
-## Directory layout
+    ExtendedDataFig1/figS1_gbhi_validation.py
+    ExtendedDataFig2/figS2_gbhi_loco.py
+    ExtendedDataFig3/gen_figS3_all9.py
 
-```
-fig1/               Figure 1 panels (platform overview + covariate coupling)
-fig2/               Figure 2 panels (Crohn's disease case study)
-fig3/               Figure 3 panels (universal GBHI LOCO validation)
-fig3_pipeline/      Upstream OOF + marker-audit scripts for Fig 3 and ED 1–3
-ExtendedDataFig1/   External-cohort GBHI validation
-ExtendedDataFig2/   Per-disease × per-cohort LOCO grid
-ExtendedDataFig3/   OOF score distributions across 9 training diseases
-```
+## External tools
 
-### `fig1/` — Figure 1 (platform overview)
-| Script | Panel |
-|---|---|
-| `gen_fig1b_worldmaps.py` | b (choropleth, 72 countries) |
-| `capture_thumbs*.py` + `gen_fig1c_platform_overview.py` | c (12-module thumbnails) |
-| `prep_fig1d_mantel_corr.py` | d (Mantel coupling, n=1,500, seed=42) |
-| `prep_fig1e_partial_spearman.py` | e (partial Spearman ρ, n=10,000, seed=42, BH-FDR) |
-| `stitch_fig1.py` | final composite |
+Two public codebases are cited in the Methods but not redistributed:
 
-### `fig2/` — Figure 2 (Crohn's disease case study)
-Scripts `gen_fig2a.py` ~ `gen_fig2f.py` produce the published panels a–f. `gen_fig2.py` assembles the composite. `gen_fig2g.py` / `gen_fig2h.py` are exploratory panels **retained for reviewer transparency** but not part of the published figure.
-
-### `fig3/` — Figure 3 (universal GBHI LOCO validation)
-`gen_fig3a.py` ~ `gen_fig3f.py` plus `gen_fig3_composite.py` (final 3×2 composite).
-
-### `fig3_pipeline/` — upstream compute (run first)
-| Script | Produces |
-|---|---|
-| `_build_v6_cache.py` | `v6_cache.npz` from backend matrices |
-| `fit_gbhi_universal.py` | Universal softmax GBHI classifier |
-| `run_cohort_loco_oof.py` | `gbhi_universal_oof.npz` (OOF probabilities) |
-| `run_cohort_loco_marker_audit.py` | Supplementary Table 8 |
-| `gen_loco_per_cohort_json.py` | `gbhi_universal_loco_per_cohort.json` |
-
----
-
-## Reproduction order
-
-```
-1.  fig3_pipeline/_build_v6_cache.py
-2.  fig3_pipeline/fit_gbhi_universal.py
-3.  fig3_pipeline/run_cohort_loco_oof.py
-4.  fig3_pipeline/run_cohort_loco_marker_audit.py
-5.  fig3_pipeline/gen_loco_per_cohort_json.py
-
-6.  fig1/prep_fig1d_mantel_corr.py
-7.  fig1/prep_fig1e_partial_spearman.py
-8.  fig1/capture_thumbs_light.py
-9.  fig1/gen_fig1b_worldmaps.py
-10. fig1/gen_fig1c_platform_overview.py
-11. fig1/stitch_fig1.py
-
-12. fig2/gen_fig2*.py
-
-13. fig3/gen_fig3[a-f].py
-14. fig3/gen_fig3_composite.py
-
-15. ExtendedDataFig1/figS1_gbhi_validation.py
-16. ExtendedDataFig2/figS2_gbhi_loco.py
-17. ExtendedDataFig3/gen_figS3_all9.py
-```
-
----
-
-## External codebases cited but not bundled
-
-The comparative analyses in Methods cite these public repositories. They are referenced in the manuscript and not redistributed:
-
-- **metaml** (Pasolli et al., 2016) — https://github.com/SegataLab/metaml
-- **GMHI2** (Chang et al., 2024) — https://github.com/jaeyunsung/GMHI2_2023
-
----
+    metaml   https://github.com/SegataLab/metaml        (Pasolli et al., 2016)
+    GMHI2    https://github.com/jaeyunsung/GMHI2_2023   (Chang et al., 2024)
 
 ## Citation
 
-If you use this code, please cite:
+Zhai J, Li Y, Liu J, Su X, Cui R, Zheng D, Sun Y, Yu J, Dai C.
+GutBiomeDB: an integrated human gut microbiome database of 168,464 samples.
+Manuscript, 2026.
 
-```bibtex
-@article{zhai2026gutbiomedb,
-  title   = {GutBiomeDB: an integrative platform for 168{,}464 human gut metagenomes across 48 diseases and 4{,}680 microbial genera},
-  author  = {Zhai, Jinxia and Dai, Cong and others},
-  journal = {Nature Methods},
-  year    = {2026},
-  note    = {Under review}
-}
-```
-
----
+    @unpublished{zhai2026gutbiomedb,
+      title  = {GutBiomeDB: an integrated human gut microbiome database of 168,464 samples},
+      author = {Zhai, Jinxia and Li, Yingjie and Liu, Jiameng and Su, Xinyi
+                and Cui, Runze and Zheng, Dianyu and Sun, Yuhan and Yu, Jingsheng
+                and Dai, Cong},
+      year   = {2026},
+      note   = {Manuscript}
+    }
 
 ## Contact
 
-- **Corresponding author:** Cong Dai
-- **First author:** Jinxia Zhai — zhaijinxia07@gmail.com
-- **Platform issues:** https://github.com/zhai199887/GutBiomeDB/issues
-- **Paper-code issues:** https://github.com/zhai199887/gutbiomedb-paper-code/issues
-
----
+Jinxia Zhai     zhaijinxia07@gmail.com
+Cong Dai (PI)   cdai@cmu.edu.cn
 
 ## License
 
-[MIT](LICENSE) — Copyright © 2026 Jinxia Zhai, Cong Dai, and contributors.
+MIT (see LICENSE).
