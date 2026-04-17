@@ -1,0 +1,52 @@
+# Byte-compiled / optimised files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local script outputs (figures, caches, pickles) — these are regenerated
+*.pkl
+*.npz
+*_cache/
+_tiles_*/
+_pdf_preview/
+
+# Data files not to redistribute
+*.xlsx
+*.csv.gz
+metadata.csv
+abundance_*.csv
+gbhi_universal_oof.npz
+gbhi_universal_loco_per_cohort.json
+v6_cache.npz
+
+# Logs
+*.log
+*.out
